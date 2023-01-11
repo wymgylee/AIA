@@ -1,0 +1,182 @@
+<!--%@ page contentType="text/html;charset=UTF-8"%-->
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<script language="javascript" for="zibox2" event='DevStatus(nType, nStatus, nErrCode, szMsg)'>DevStatus(nType, nStatus, nErrCode, szMsg)</script>
+	<title>zibox2 WEB SAMPLE</title>
+	<script>
+		var volumeCapture = 65;  // 2022-08-26 지박스2 녹음 볼륨(녹음 품질 영향있으므로 중요한 값이며 아이알링크의 설정 값 가이드를 받아서 설정한다.)
+		var volumePlayback = 100; // 2022-08-26 지박스2 재생 볼륨(녹음 품질 영향있으므로 중요한 값이며 아이알링크의 설정 값 가이드를 받아서 설정한다.)
+		var pathRecord = "c:\\ziphone\\record"; // 지박스2 녹취 파일 저장 경로
+		
+		// sftp 사용(내부망)		
+		//var rProtocol = "ftps";  // ftp, sftp, http, https, ftps 2022-09-08 ftps 지원
+		//var rUrl = "sftp://192.168.1.175"; //서버 주소
+		//var rUser = "irlink"; //계정
+		//var rPass = "dkdldkf^^04"; //패스워드
+		//var rRemotePath = "meritz"; //서버 폴더 경로
+		//var rDate = 1; //서버 폴더 아래 날짜 폴더 생성 여부 1:생성, 0:미생성		
+		
+		// https 사용(외부망, 재택상담원)
+		//var rProtocol = "https";  // ftp, sftp, http, https
+		//var rUrl = "https://192.168.1.175/refHome.jsp"; //서버 주소
+		//var rUser = "ziphone"; //계정
+		//var rPass = "irlink"; //패스워드
+		//var rRemotePath = "meritz"; //서버 폴더 경로
+		//var rDate = 1; //서버 폴더 아래 날짜 폴더 생성 여부 1:생성, 0:미생성
+		
+		var rProtocol = "https";  // ftp, sftp, http, https
+		var rUrl = "https://mjtmrec.meritzfire.com/httpup/RefHome.jsp"; //서버 주소
+		var rUser = "ziphone"; //계정
+		var rPass = "irlink"; //패스워드
+		var rRemotePath = "meritz"; //서버 폴더 경로
+		var rDate = 1; //서버 폴더 아래 날짜 폴더 생성 여부 1:생성, 0:미생성
+		
+		// 2022-09-08 라피치 서버
+		var RAPEECH_IP = "192.168.1.176";
+		var RAPEECH_PORT = 50045; // 실시간 패킷 전송 수신 포트
+		var RAPEECH_LR = 2; // 1:상담원 채널, 2:고객 채널(메리츠)
+		var RAPEECH_ENC = 0; // 0:암호화 하지 않음, 1:암호화(AES256-CBC)
+		var RAPEECH_KEY = ""; // 가설계번호
+		
+		function deviceInit() {
+			
+			zibox2.deviceUninit(); console.log(getDateString() + "[deviceInit()]zibox2.deviceUninit();"); 		
+			zibox2.deviceInit(); console.log(getDateString() + "[deviceInit()]zibox2.deviceInit();"); 
+		}
+		
+		function deviceUninit() {
+			zibox2.deviceUninit(); console.log(getDateString() + "[deviceUninit()]zibox2.deviceUninit();"); 
+		}
+		
+		function recordingStart() {
+			var fileName = "test_" + new Date().getTime()+ ".mp3";  //녹취 파일명 2022-08-26 파일명 중복되지 않게...
+			zibox2.recordingStart(fileName); console.log(getDateString() + "[recordingStart()]zibox2.recordingStart('" + fileName + "');"); 
+		}
+		
+		function recordingStop() {
+			zibox2.recordingStop(); console.log(getDateString() + "[recordingStop()]zibox2.recordingStop();"); 
+		}
+		
+		// 2022-09-08 신규
+		function streamStart() {
+			zibox2.streamSenderLR_ext(RAPEECH_IP, RAPEECH_PORT, RAPEECH_LR, RAPEECH_ENC, RAPEECH_KEY); 
+			console.log(getDateString() + "[streamStart()]zibox2.streamSenderLR_ext('" + RAPEECH_IP + ", " + RAPEECH_PORT + ", " + RAPEECH_LR + ", " + RAPEECH_ENC + ", '" + RAPEECH_KEY + "');"); 
+		}
+		
+		// 2022-09-08 신규
+		function streamStop() {
+			zibox2.streamStop(4); // 고객 채널(메리츠) 실시간 패킷 전송 중지
+			console.log(getDateString() + "[streamStop()]zibox2.streamStop(4);"); 
+		}		
+		
+		function getDateString() {
+			var date = new Date();
+			return date.toISOString().slice(0,10) + " " + date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1") + " ";			
+		}
+		
+		function setDeviceInit() {
+			console.log(getDateString() + "[setDeviceInit()]"); 
+			zibox2.setVolume(1, volumeCapture); console.log(getDateString() + "[setDeviceInit()]zibox2.setVolume(1, " + volumeCapture + ");"); // 녹취볼륨설정
+			zibox2.setVolume(0, volumePlayback); console.log(getDateString() + "[setDeviceInit()]zibox2.setVolume(0, " + volumePlayback + ");"); // 재생볼륨설정
+			zibox2.setRecordingPath(pathRecord); console.log(getDateString() + "[setDeviceInit()]zibox2.setRecordingPath('" + pathRecord + "');"); // 지박스2 녹취 파일 저장 경로 설정
+			zibox2.setRecfileSendto(rProtocol, rUrl, rUser, rPass, rRemotePath, rDate); console.log(getDateString() + "[setDeviceInit()]zibox2.setRecfileSendto('" + rProtocol + "', '" + rUrl + "', '" + rUser + "', '" + rPass + "', '" + rRemotePath + "', " + rDate  + ");"); // 지박스2 녹취 파일 저장 경로 설정
+			zibox2.monitorAcceptable(1); console.log(getDateString() + "[setDeviceInit()]zibox2.monitorAcceptable(1);"); // 감청허용
+		}
+		
+		function setButtons() {
+		}
+		
+		function DevStatus(nType, nStatus, nErrCode, szMsg) {
+			console.log(getDateString() + "*[DevStatus]nType=" + nType + ", nStatus=" + nStatus + ", nErrCode=" + nErrCode + ", szMsg=" + szMsg);
+			
+			if(nType == 1) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_init");
+				if(nStatus == 1) {					
+					console.log(getDateString() + "[DevStatus]지박스 연결 성공 후 setDeviceInit() 호출");
+					setDeviceInit();
+				} else if(nStatus == -1) {
+					console.log(getDateString() + "[DevStatus]지박스 연결 실패");
+				}
+			} else if(nType == 2) {
+				if(nStatus == 1) {					
+					console.log(getDateString() + "[DevStatus]지박스 PC 녹취파일 저장 경로 설정 성공");
+				} else if(nStatus == 0) {
+					console.log(getDateString() + "[DevStatus]지박스 PC 녹취파일 저장 경로 설정 실패");
+				}
+			} else if(nType == 3) {
+				if(nStatus == 1) {
+					console.log(getDateString() + "[DevStatus]녹취시작성공");
+				} else if(nStatus == 0) {
+					console.log(getDateString() + "[DevStatus]녹취종료성공");
+				} else if(nStatus == -1) {
+					/* 2022-08-23 수정 */
+					if(nErrCode != 0)
+						console.log(getDateString() + "[DevStatus]지박스 녹취 실패");
+				}
+			} else if(nType == 4) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_playback");
+			} else if(nType == 5) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_monitor");
+			} else if(nType == 6) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_monitor_thread");
+			} else if(nType == 7) {
+				//2022-09-08
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_stream_sender, nStatus=" + nStatus + ", nErrCode=" + nErrCode + ", szMsg=" + szMsg);
+			} else if(nType == 8) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_stream_sender_second");
+			} else if(nType == 9) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_stream_sender_left");
+			} else if(nType == 10) {
+				//2022-09-08
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_stream_sender_right, nStatus=" + nStatus + ", nErrCode=" + nErrCode + ", szMsg=" + szMsg);
+			} else if(nType == 11) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_file_send");
+			} else if(nType == 12) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_device_info");
+			} else if(nType == 13) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_file_convert");
+			} else if(nType == 14) {
+				console.log(getDateString() + "[DevStatus]PC 녹취 파일 서버 전송 정보 설정");
+			} else if(nType == 15) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_recfilerename");
+			} else if(nType == 16) {
+				if(nStatus == 1) {
+					console.log(getDateString() + "[DevStatus]지박스2 캡처볼륨설정성공");
+				} else if(nStatus == 0) {
+					console.log(getDateString() + "[DevStatus]지박스2 재생볼륨설정성공");
+				}
+				
+			} else if(nType == 17) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_encryption");
+			} else if(nType == 18) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_getvolume");
+			} else if(nType == 19) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_ctx_stop");
+			} else if(nType == 20) {
+				console.log(getDateString() + "[DevStatus]nType=" + nType + ", ev_type_downloadURL");
+			}			
+			
+		}
+	</script>
+</head>
+
+<body>
+	<OBJECT ID="zibox2" WIDTH="100" HEIGHT="30" CLASSID="CLSID:2057bdf1-b5ac-45ac-b31f-354fa7c94c88" codebase="ZiBoxAudio.cab#version=1,0,0,8"></OBJECT> <!-- 2022-08-26 버전 변경 -->
+	<p>
+	
+	<input type="button" value="지박스연결" onclick="deviceInit()">
+	<input type="button" value="지박스연결끊기" onclick="deviceUninit()">
+	<p>
+	
+	<input type="button" value="녹취시작" onclick="recordingStart()">
+	<input type="button" value="녹취종료" onclick="recordingStop()">
+	<p>
+	
+	<!-- 2022-09-08 -->
+	<input type="button" value="고객 통화 실시간 패킷 전송(시작)" onclick="streamStart()">
+	<input type="button" value="고객 통화 실시간 패킷 전송(종료)" onclick="streamStop()">
+	<p>
+</body>
+</html>	

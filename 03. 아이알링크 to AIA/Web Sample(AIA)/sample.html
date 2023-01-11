@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+
+    <title>법인폰 개발 웹 샘플</title>
+	<script src="ir-celering-bundle.js"></script>
+    <script language="javascript">
+	
+      var irCelering = null;
+	  var stateConnect = -1; // 법인폰 연결 상태
+	  var stateCall = "대기"; // 법인폰 통화 상태
+	  var callID = ""; // 녹취키
+
+      window.onload = function () {
+        /* 법인폰 객체 생성*/
+        console.log('[window.onload()]');
+        irCelering = new window.IRCelering();
+
+        /* 법인폰 이벤트 정의 */
+
+        // 법인콜 중계서버 연결/연결끊기 시 발생하는 이벤트
+        irCelering.DevConnect = function (nConnFlag) {
+			stateConnect = nConnFlag;
+			console.log('[DevConnect] nConnFlag=', nConnFlag);
+			SetChangedConnectState();
+			SetChangedCallState();			
+			if(nConnFlag == 2) {
+				irCelering.SetSavePath(2, 'https://118.131.74.194/httpup/RefHome.jsp', 'AIA', 1); // 통화가 종료되었을 때 법인폰 녹취파일이 전송될 서버 주소 및 path 설정
+				console.log("[DevConnect] irCelering.SetSavePath(2, 'https://118.131.74.194/httpup/RefHome.jsp ', 'AIA', 1);");
+			}			
+        };
+		
+        // 법인콜 통화 시작 시 발생하는 이벤트
+        irCelering.DevCallStart = function (szCallInfo) {		  
+          console.log('[DevCallStart] szCallInfo=', szCallInfo);
+		  var callID = JSON.parse(szCallInfo).rcdgFileNm;
+		  document.getElementById("txtCallID").value = callID;	
+		  var io = JSON.parse(szCallInfo).io;
+		  if(io == "O") {
+			stateCall = "발신중"; 
+		  }
+		  else if(io == "I") {
+			stateCall = "수신중";
+			document.getElementById("txtPhoneNoCust").value = JSON.parse(szCallInfo).cusTelNo;
+		  }
+		  SetChangedCallState();
+        };
+		
+        // 법인콜 발신 전화가 고객과 통화 연결(소리샘 포함) 시 발생하는 이벤트
+        irCelering.DevCallConnected = function (szCallInfo) {
+          console.log('[DevCallConnected] szCallInfo=', szCallInfo);
+		  stateCall = "통화중";
+		  SetChangedCallState();
+        };
+
+        // 법인콜 전화끊기 시 발생하는 이벤트
+        irCelering.DevCallEnd = function (szCallInfo) {
+          console.log('[DevCallEnd] szCallInfo=', szCallInfo);
+		  stateCall = "후처리중";
+		  SetChangedCallState();
+        };
+
+        // 법인폰 문자 수/발신 시 발생하는 이벤트
+        irCelering.DevMessageExt = function (nCode, number, otherNumbers, content, incoming, time, images) {
+          console.log(
+            '[DevMessageExt] nCode=',
+            nCode,
+            ',number=',
+            number,
+			',otherNumbers=',
+            otherNumbers,
+            ',content=',
+            content,
+            ',incoming=',
+            incoming,
+            ',time=',
+            time,
+            ',images=',
+            images,
+          );
+        };
+
+		// 법인콜 통화 가능여부 확인 이벤트
+        irCelering.DevCallState = function (nCallFlag) {
+          console.log('[DevCallState] nCallFlag=', nCallFlag);
+        };
+		
+		// 법인콜에서 통화 녹음이 안 되는 경우에 발생하는 이벤트
+        irCelering.DevError = function (nErrCode) {
+          console.log('[DevError] nErrCode=', nErrCode);
+        };
+      };
+    </script>
+
+  <script language="javascript">
+		function ConnectRelayServer() {
+			var relayServerAddr = "https://192.168.1.175:3001";
+			var phoneNumber = document.getElementById('txtPhoneNo').value;
+			console.log("ConnectRelayServer() irCelering.CreateDevice('" + relayServerAddr + "', '" + phoneNumber + "');");			
+			irCelering.CreateDevice(relayServerAddr, phoneNumber);
+		}
+		
+		function CloseRelayServer() {
+			console.log("CloseRelayServer() irCelering.CloseDevice();");
+			irCelering.CloseDevice();
+		}
+		
+		function MakeCall() { // 전화 걸기
+			if(stateConnect == 2) {
+				var phoneNumberCust = document.getElementById('txtPhoneNoCust').value;
+				console.log("MakeCall() irCelering.SetDialStr('" + phoneNumberCust + "');");
+				irCelering.SetDialStr(phoneNumberCust) 
+			} else {
+				console.log("MakeCall() 전화를 걸 수 있는 상태가 아닙니다. stateConnect=" + stateConnect);
+			}
+		}
+		
+		function DropCall() { // 전화 끊기
+			console.log("DropCall() irCelering.SetHookMode(1);");
+			irCelering.SetHookMode(1);			
+		}
+		
+		function AnswerCall() { // 전화 받기
+			console.log("AnswerCall() irCelering.SetHookMode(3);");
+			irCelering.SetHookMode(3);
+		}
+		
+		function WrapupCall() { // 상담 저장
+			console.log("WrapupCall();");
+			stateCall = "대기";
+			SetChangedCallState();
+			irCelering.SetExtra("상담|저장|^^^");
+		}
+		
+		function SetChangedConnectState() {
+			document.getElementById("txtStateConnect").value = stateConnect;			
+		}
+		
+		function SetChangedCallState() {
+			document.getElementById("txtStateCall").value = stateCall;	
+		}
+		
+  </script>
+  </head>
+  <body>
+	<table>
+		<tr>
+			<td>법인폰 연결 상태</td>
+			<td><input type="text" id="txtStateConnect" name="txtStateConnect" /></td>
+		</tr>
+		<tr>
+			<td>법인폰 통화 상태</td>
+			<td><input type="text" id="txtStateCall" name="txtStateCall" /></td>
+		</tr>
+		<tr>
+			<td>녹취키</td>
+			<td><input type="text" id="txtCallID" name="txtCallID" style="width:500px" /></td>
+		</tr>
+	</table>
+
+    <h1>법인폰 웹 샘플</h1>
+    <p>
+      <h3>1. 핸드폰 연결 / 연결 종료 </h3>
+	  법인 전화번호 : <input type="text" id="txtPhoneNo" name="txtPhoneNo" value="01028696014" /> 
+      <input type="button" value="법인폰 연결" onclick="ConnectRelayServer()" />
+      <input type="button" value="법인폰 연결 종료" onclick="CloseRelayServer()" />
+    </p>
+
+    <p>
+      <h3>2. 전화걸기/전화끊기 </h3>
+      고객 전화번호 : <input type="text" value="01032370942" id="txtPhoneNoCust" />
+      <input type="button" value="전화걸기" onclick="MakeCall()" />      	  
+	  <input type="button" value="전화받기" onclick="AnswerCall()" />
+	  <input type="button" value="전화끊기" onclick="DropCall()" />
+	  <input type="button" value="상담저장" onclick="WrapupCall()" />
+	  <input type="button" value="통화상태확인" onclick="irCelering.GetCallState()" />
+    </p>
+	
+	<p>
+      <h3>3. 문자 </h3>
+	  문자내용 : <br>
+	  <textarea id="txtMessage" name="txtMessage" rows="10" cols="100">
+	  </textarea> <br>
+      <input type="button" value="문자발송" onclick="irCelering.SendMessageExt(document.getElementById('txtPhoneNoCust').value, document.getElementById('txtMessage').value, '')" /> 
+	  <input type="button" value="문자발송(MMS)" onclick="irCelering.SendMessageExt(document.getElementById('txtPhoneNoCust').value, document.getElementById('txtMessage').value, 'test.jpg^https://118.131.74.194/mms/test.jpg')" />
+    </p>
+	
+  </body>
+</html>

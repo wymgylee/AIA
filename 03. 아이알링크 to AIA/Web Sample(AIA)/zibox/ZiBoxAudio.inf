@@ -1,0 +1,15 @@
+;ZiBoxAudio.ocx용 INF 파일
+;DestDir은(는) Windows 디렉터리에서 10, Windows\System(32) 디렉터리에서는 11이거나 Occache 디렉터리에서는 비워둡니다.
+
+[version]
+signature="$CHICAGO$"
+AdvancedINF=2.0
+
+[Add.Code]
+ZiBoxAudio.ocx=ZiBoxAudio.ocx
+
+[ZiBoxAudio.ocx]
+file-win32-x86=thiscab
+clsid={2057bdf1-b5ac-45ac-b31f-354fa7c94c88}
+FileVersion=1,0,0,8
+RegisterServer=yes
